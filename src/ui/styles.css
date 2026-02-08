@@ -1,0 +1,72 @@
+body {
+    background-color: #444444;
+    width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#tableDisplay {
+    float: none;
+}
+
+#controlPanel {
+    width: 600px;
+    height: 800px;
+    float: right;
+    background-color: #222222;
+
+    text-align: center;
+    font-family: Helvetica, sans-serif;
+    color: white;
+}
+
+#dial {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.row1 {
+    display: flex;
+}
+
+.row2 {
+    display: flex;
+}
+.row3 {
+    display: flex;
+}
+
+
+#visualizer {
+    margin: 0px;
+}
+
+.mainControls {
+    background-color: #333333;   
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    color: #ffffff;
+    font-size: 18px;
+    
+}
+
+.mainControls input {
+    appearance: none;
+    width: 100%;
+    height: 25px;
+    background: #d3d3d3;
+    outline: none; 
+    opacity: 0.7;
+    margin-top: 20px;
+}
+
+.mainControls h3 {
+    font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif
+}
+
+
+#visualizer {
+    position: absolute;
+    z-index: -1;
+    margin-left: auto;
+    margin-right: auto;
+}
