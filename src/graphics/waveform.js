@@ -41,9 +41,9 @@ export class ObsidianMesh {
         for (let group of this.sharedVertexIndexes) {
             let idx = group[0];
             this.originalPositions.push([
-                position.getX(idx),
-                position.getY(idx),
-                position.getZ(idx)
+                position.getX(idx) * this.getScaledRandom(),
+                position.getY(idx) * this.getScaledRandom(),
+                position.getZ(idx) * this.getScaledRandom()
             ]);
         }
 
@@ -56,6 +56,11 @@ export class ObsidianMesh {
 
         this.material.wireframe = true;
         this.mesh = new THREE.Mesh(this.geometry, this.material);
+    }
+
+    getScaledRandom()
+    {
+        return Math.random() * 0.5 + 0.5
     }
 
     isPointShared(vector1, vector2)
@@ -72,19 +77,51 @@ export class ObsidianMesh {
         let verticesIndex = this.sharedVertexIndexes[index];
         let original = this.originalPositions[index];
 
-        for (let idx of verticesIndex) {
-            pos.setX(idx, original[0] + x);  // Set to original + offset
-            pos.setY(idx, original[1] + y);
-            pos.setZ(idx, original[2] + z);
+        for (let index of verticesIndex) {
+            pos.setX(index, original[0] + x); 
+            pos.setY(index, original[1] + y);
+            pos.setZ(index, original[2] + z);
         }
         pos.needsUpdate = true;
         this.geometry.computeVertexNormals();
     }
 
+
+    spikeMod(outwardAmt, osc)
+    {
+        outwardAmt *= 0.5
+        osc = osc % 1;
+        osc = Math.abs(Math.sin(osc * Math.PI * 2)) * 0.5;
+        osc *= osc;
+
+        outwardAmt = outwardAmt + (osc * outwardAmt)
+
+        const spikeIndices = [0, 3, 6, 11, 13, 18];
+
+        for(let index in this.sharedVertexIndexes)
+        {
+            let original = this.originalPositions[index];
+            let normLength = Math.sqrt(original[0] ** 2 + original[1] ** 2 + original[2] ** 2);
+            
+            let xOffset = 0, yOffset = 0, zOffset = 0;
+            if (spikeIndices.includes(parseInt(index))){
+                xOffset = (original[0] / normLength) * outwardAmt;
+                yOffset = (original[1] / normLength) * outwardAmt;
+                zOffset = (original[2] / normLength) * outwardAmt;
+
+            } 
+                
+            this.modifyVertex(index, xOffset, yOffset, zOffset)
+        }
+    }
+
+
     addToScene(scene){
         scene.add(this.mesh)
     }
 }
+
+
 
 export class OrbitMesh
 {

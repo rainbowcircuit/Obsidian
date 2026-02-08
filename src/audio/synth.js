@@ -43,7 +43,6 @@ export const modifyWavetable = async () => {
   const numTables = 8;
   const wavetables = new Float32Array(samplesPerTable * numTables);
 
-  // Calculate segment size from source audio
   const segmentSize = Math.floor(audioData.length / numTables);
 
   for (let table = 0; table < numTables; table++) {
@@ -58,23 +57,29 @@ export const modifyWavetable = async () => {
       const nextIndex = Math.min(currentIndex + 1, segment.length - 1);
       const lerp = sourceIndex - currentIndex;
 
-      let writePosition = table * samplesPerTable + sample
-      wavetables[writePosition] = segment[currentIndex] * (1 - lerp) + segment[nextIndex] * lerp;
+      let writePosition = table * samplesPerTable + sample;
+      let writeValue = segment[currentIndex] * (1 - lerp) + segment[nextIndex] * lerp;
+      wavetables[writePosition] = writeValue;
     }
   }
-
-
-
-
 
   core.updateVirtualFileSystem({
     '/wavetable': [wavetables]
   });
 
-
   table.tableGraphics.setTables(wavetables);
   table.tableGraphics.createGeometry();
 }
+
+function getWindow(sampleIndex)
+{
+  let radian = 1.0/sampleIndex;
+  let window = Math.cos(radian * Math.PI);
+  window *= window;
+
+  return window;
+}
+
 
 export const processSynth = (state) => {
   let eg = el.adsr(state.ampAtk, 

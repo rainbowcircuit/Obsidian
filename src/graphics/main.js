@@ -1,6 +1,7 @@
 import { core } from '../audio/main.js'
 import * as THREE from 'three'
 import * as Obsedian from './waveform'
+import { outline } from 'three/examples/jsm/tsl/display/OutlineNode.js';
 
 // renderer
 const renderer = new THREE.WebGLRenderer( {antialias: true });
@@ -43,22 +44,15 @@ let shapeMesh = new Obsedian.ObsidianMesh();
 shapeMesh.material.wireframe = false;
 shapeMesh.addToScene(scene);
 
+
+
 let orbitMesh = new Obsedian.OrbitMesh();
 scene.add(orbitMesh.mesh)
 
-let randX = Math.random() * 0.9;
-let randY = Math.random() * 0.9;
-let randZ = Math.random() * 0.9;
-
-let scale = 0.3
 
 
 core.on('snapshot', function(e) {
-  console.log(e);
-  if (e.source === "ampEG") // switch this to eg
-   {
-     egAmount = e.data;
-   }
+  if (e.source === "ampEG") { egAmount = e.data; } 
 });
 
 
@@ -66,31 +60,21 @@ let egAmount = 0;
 let time = 0;
 let time2 = 0;
 
-let outlineScale = 1;
 function animate() {
-  time = time + 0.02 % (Math.PI * 2);
-  time2 = time2 + 0.025 % 1;
 
-
+  // clean this up next:
+  time = time + 0.02 % (Math.PI * 2) * (egAmount * 6 + 1);
+  time2 = time2 + 0.2 % 1;
+  pointLight.intensity = 5 + (egAmount * 20);
+  pointLight2.intensity = (egAmount * 5);
   shapeMesh.mesh.rotation.y = time;
-
-  pointLight.position.x = Math.cos(time);
-  pointLight.position.y = Math.sin(time);
-
-
-  // animate vertices
-  for (let i = 0; i < shapeMesh.sharedVertexIndexes.length; i++)
-  {
-    
-    if (i % 2 == 0){
-      shapeMesh.modifyVertex(i, Math.sin(i) * egAmount, 
-        egAmount, 
-        egAmount);
-    }
-  }
+  shapeMesh.spikeMod(egAmount, time2);
 
 
 
+  // orb
+  orbitMesh.mesh.position.x = Math.cos(time) * 2;
+  orbitMesh.mesh.position.z = Math.sin(time) * 2;
 
 
   renderer.render(scene, camera);
