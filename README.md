@@ -1,19 +1,20 @@
-# obsidian
+# Obsidian
 ### Version 1
-obsidian is a bass synthesizer inspired by the sounds of artists like Great Dane, Tsuruda, and ill.Gates. 
+obsidian is a bass synthesizer.
 
 ## Voice Architecture
-obsidian is a monophonic FM voice, with a hard clipper and a high feedback comb filter sandwiched between the operators. The modifiers in between mask the more traditional FM sidebands. At the output is a series of five notch filters. 
+obsidian is a monophonic synth voice, that implements a 2d wavetable (4d if you really consider that a single wave table is 2d already but hey). Individual ratios can be adjusted so that you can morph through the 2d wavetables running at different harmonic intervals. 
 
-A parallel waveshaped sine sub oscillator is tuned an octave below. 
+Tone controls the phase modulation index. This can probably be expanded in the future to include other types of waveform modification (although PM is the most harmonically fruitful). 
 
+### Changing Wavetables
 
-## Modulation
-A chaos modulator can be assigned to the main voice architecture. 
+The first argument of this function in the src/audio/main.js refers to the wavetable index. There's 7 total but you can add more. These are pulled from Serum at the moment. 
+```
+  Synth.modifyWavetable(4, 0);
+  Synth.modifyWavetable(5, 1);
+```
 
 ## Some Places for Improvement
 ### Variable Voice Architecture
-Currently the clipper, comb filter, and FM all play a part in shaping the tone of the instrument. It's a bit unintuitive, and leaves room for a more graphical way of reordering or affecting the internal gain staging. 
-
-## Modulation Sources
-They are clunky, and honestly could use some help. Maybe a macro for shaping second order modulation might be where it's at. 
+2D wavetable is great, but the dials really make it clunky to use. Perhaps some more straightforward X/Y pad would be a better move here. 
