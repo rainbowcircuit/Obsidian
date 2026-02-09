@@ -18,13 +18,16 @@ export let synthState = {
 
     freq: el.sm(el.const({ key: 'freq', value: 100 })),
 
-    position: el.sm(el.const({ key: 'position', value: 0.5 })),
+    positionX: el.sm(el.const({ key: 'positionY', value: 0.5 })),
+    positionY: el.sm(el.const({ key: 'positionY', value: 0.5 })),
+    ratioX: el.sm(el.const({ key: 'ratioX', value: 0 })),
+    ratioY: el.sm(el.const({ key: 'ratioY', value: 0 })),
+
+
     unisonVoice: el.sm(el.const({ key: 'unisonVoice', value: 5 })),
     unisonDetune: el.sm(el.const({ key: 'unisonDetune', value: 0.4 })),
 
     tone: el.sm(el.const({ key: 'tone', value: 1 })),
-    ratio: el.sm(el.const({ key: 'ratio', value: 0 })),
-    ratioDetune: el.sm(el.const({ key: 'ratioDetune', value: 1 })),
 
     subLevel: el.sm(el.const({ key: 'subLevel', value: 1 })),
     subTone: el.sm(el.const({ key: 'subTone', value: 1 })),
@@ -34,9 +37,9 @@ export let synthState = {
     
 }
 
-export const modifyWavetable = async () => {
+export const modifyWavetable = async (readIndex, wavetableIndex) => {
   const ctx = new AudioContext();
-  let res = await fetch('/src/audio/tables/table1.wav');
+  let res = await fetch(`/src/audio/tables/table${readIndex}.wav`);
   let sampleBuffer = await ctx.decodeAudioData(await res.arrayBuffer());
   let audioData = sampleBuffer.getChannelData(0);
 
@@ -65,7 +68,7 @@ export const modifyWavetable = async () => {
   }
 
   core.updateVirtualFileSystem({
-    '/wavetable': [wavetables]
+    [`/wavetable${wavetableIndex}`]: [wavetables]
   });
 
   table.tableGraphics.setTables(wavetables);
@@ -83,10 +86,10 @@ function getWindow(sampleIndex)
 
 
 export const processSynth = (state, channel) => {
-  let eg = el.adsr(state.ampAtk, 
-                  state.ampDcy, 
+  let eg = el.adsr(el.mul(state.ampAtk, 8), 
+                    el.mul(state.ampDcy, 8), 
                   state.ampSus, 
-                  state.ampRls, 
+                  el.mul(state.ampRls, 8), 
                   state.gate);
 
   let eg2 = el.adsr(0.2,
@@ -97,11 +100,11 @@ export const processSynth = (state, channel) => {
 
   eg = el.snapshot({ name: 'ampEG' }, el.train(30), eg); 
 
-  let synth = oscillator(state.freq, state.position, state.tone, 3, 10, channel == 0);
+  let synth = oscillator(state.freq, state.positionX, state.positionY, state.ratioX, state.ratioY, state.tone, 3, 10, channel == 0);
   synth = el.mul(synth, 0.85);
 
   let sub = el.cycle(el.mul(state.subOctave, state.freq));
-  let subTone = el.mul(el.add(state.subTone, 1), 1.75);
+  let subTone = el.mul(el.add(state.subTone, 1), 3);
   sub = el.tanh(el.mul(sub, subTone));
   sub = el.mul(sub, state.subLevel);
 
@@ -109,7 +112,7 @@ export const processSynth = (state, channel) => {
 }
 
 
-export const oscillator = (freqInHz, position, tone, numVoices, detuneAmt, channel) => {
+export const oscillator = (freqInHz, positionX, positionY, ratioX, ratioY, tone, numVoices, detuneAmt, channel) => {
 
   numVoices = numVoices < 7 ? numVoices : 7;
   let unisonVoices = [];
@@ -136,7 +139,7 @@ export const oscillator = (freqInHz, position, tone, numVoices, detuneAmt, chann
     let multiplier = el.pow(2, el.div(cents, 1200));
     let detunedFreq = el.mul(freqInHz, multiplier);
 
-    let vc = wavetable(position, detunedFreq, tone);
+    let vc = wavetable(positionX, positionY, ratioX, ratioY, detunedFreq, tone);
     unisonVoices.push(el.mul(vc, panGain));
   }
 
@@ -144,7 +147,7 @@ export const oscillator = (freqInHz, position, tone, numVoices, detuneAmt, chann
   return el.mul(sum, 1 / numVoices);
 }
 
-
+/*
 export const wavetable = (tablePosition, freqInHz, tone) => {
     let pos = el.mul(tablePosition, 7);    
     let posFloor = el.floor(pos);
@@ -170,6 +173,60 @@ export const wavetable = (tablePosition, freqInHz, tone) => {
 
   return wave;
 }
+*/
+export const wavetable = (tablePositionX, tablePositionY, ratioX, ratioY, freqInHz, tone) => {
+  let posX = el.mul(tablePositionX, 7);
+  let posXFloor = el.floor(posX);
+  let lerpX = el.sub(posX, posXFloor);
+
+  let posY = el.mul(tablePositionY, 7);
+  let posYFloor = el.floor(posY);
+  let lerpY = el.sub(posY, posYFloor);
+
+  let normIncrement = 1 / 64;
+  let fmDepth = el.mul(tone, 2);
+  let fm = el.mul(el.cycle(el.div(freqInHz, 2)), fmDepth);
+
+  ratioX = el.add(el.floor(el.mul(ratioX, 4)), 1);
+  let phaseX = el.phasor(el.mul(freqInHz, ratioX));
+  phaseX = el.add(phaseX, fm);
+  phaseX = el.div(phaseX, 8);
+
+  ratioY = el.add(el.floor(el.mul(ratioY, 4)), 1);
+  let phaseY = el.phasor(el.mul(freqInHz, ratioY));
+  phaseY = el.add(phaseY, fm);
+  phaseY = el.div(phaseY, 8);
+
+
+  let phaseX0Y0 = el.add(phaseX, el.mul(el.add(el.mul(posYFloor, 8), posXFloor), normIncrement));
+  let phaseX1Y0 = el.add(phaseX, el.mul(el.add(el.mul(posYFloor, 8), el.add(posXFloor, 1)), normIncrement));
+  let phaseX0Y1 = el.add(phaseY, el.mul(el.add(el.mul(el.add(posYFloor, 1), 8), posXFloor), normIncrement));
+  let phaseX1Y1 = el.add(phaseY, el.mul(el.add(el.mul(el.add(posYFloor, 1), 8), el.add(posXFloor, 1)), normIncrement));
+
+  let wave00 = el.table({ path: '/wavetable0' }, phaseX0Y0);
+  let wave10 = el.table({ path: '/wavetable0' }, phaseX1Y0);
+  let wave01 = el.table({ path: '/wavetable1' }, phaseX0Y1);
+  let wave11 = el.table({ path: '/wavetable1' }, phaseX1Y1);
+
+  // Bilinear interpolation
+  let waveX0 = el.add(
+    el.mul(wave00, el.sub(1, lerpX)),
+    el.mul(wave10, lerpX)
+  );
+
+  let waveX1 = el.add(
+    el.mul(wave01, el.sub(1, lerpX)),
+    el.mul(wave11, lerpX)
+  );
+
+  let wave = el.add(
+    el.mul(waveX0, el.sub(1, lerpY)),
+    el.mul(waveX1, lerpY)
+  );
+
+  return wave;
+}
+
 
 
 // LFO + modulator + agitate modulator
