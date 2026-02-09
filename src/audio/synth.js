@@ -2,6 +2,7 @@ import {el} from '@elemaudio/core';
 import { core } from './main';
 
  import * as table from '../graphics/tableVisualizer.js'
+import { sample } from 'three/tsl';
 
 export const scaleBias = (input, scale, bias) => {
     return el.add(el.mul(input, scale), bias);
@@ -21,13 +22,13 @@ export let synthState = {
     unisonVoice: el.sm(el.const({ key: 'unisonVoice', value: 5 })),
     unisonDetune: el.sm(el.const({ key: 'unisonDetune', value: 0.4 })),
 
-    tone: el.sm(el.const({ key: 'tone', value: 0.5 })),
-    ratio: el.sm(el.const({ key: 'ratio', value: 1 })),
+    tone: el.sm(el.const({ key: 'tone', value: 1 })),
+    ratio: el.sm(el.const({ key: 'ratio', value: 0 })),
     ratioDetune: el.sm(el.const({ key: 'ratioDetune', value: 1 })),
 
     subLevel: el.sm(el.const({ key: 'subLevel', value: 1 })),
     subTone: el.sm(el.const({ key: 'subTone', value: 1 })),
-    subOctave: el.sm(el.const({ key: 'subOctave', value: 1 })),
+    subOctave: el.sm(el.const({ key: 'subOctave', value: 0.5 })),
 
     // lfo
     
@@ -35,7 +36,7 @@ export let synthState = {
 
 export const modifyWavetable = async () => {
   const ctx = new AudioContext();
-  let res = await fetch('/src/audio/tables/table2.wav');
+  let res = await fetch('/src/audio/tables/table1.wav');
   let sampleBuffer = await ctx.decodeAudioData(await res.arrayBuffer());
   let audioData = sampleBuffer.getChannelData(0);
 
@@ -59,7 +60,7 @@ export const modifyWavetable = async () => {
 
       let writePosition = table * samplesPerTable + sample;
       let writeValue = segment[currentIndex] * (1 - lerp) + segment[nextIndex] * lerp;
-      wavetables[writePosition] = writeValue;
+      wavetables[writePosition] = writeValue * getWindow(sample);
     }
   }
 
@@ -73,82 +74,90 @@ export const modifyWavetable = async () => {
 
 function getWindow(sampleIndex)
 {
-  let radian = 1.0/sampleIndex;
-  let window = Math.cos(radian * Math.PI);
+  let radian = 1.0/2048;
+  let window = Math.cos(radian * Math.PI * sampleIndex);
   window *= window;
 
   return window;
 }
 
 
-export const processSynth = (state) => {
+export const processSynth = (state, channel) => {
   let eg = el.adsr(state.ampAtk, 
                   state.ampDcy, 
                   state.ampSus, 
                   state.ampRls, 
                   state.gate);
 
+  let eg2 = el.adsr(0.2,
+    0.2,
+    0.2,
+    0.1,
+    state.gate);
+
   eg = el.snapshot({ name: 'ampEG' }, el.train(30), eg); 
 
-  let ratio = el.floor(el.mul(state.ratio, 5));
-  ratio = el.add(ratio, state.ratioDetune);
-
-  let freq = el.mul(state.freq, ratio);
-
-  let synth = oscillator(freq, state.position, 3, state.unisonDetune);
-  synth = el.sin(el.mul(el.add(el.phasor(40), el.mul(synth, state.tone)), Math.PI * 2.0));
+  let synth = oscillator(state.freq, state.position, state.tone, 3, 10, channel == 0);
   synth = el.mul(synth, 0.85);
 
-
   let sub = el.cycle(el.mul(state.subOctave, state.freq));
-  sub = el.tanh(el.mul(sub, 1.2));
+  let subTone = el.mul(el.add(state.subTone, 1), 1.75);
+  sub = el.tanh(el.mul(sub, subTone));
   sub = el.mul(sub, state.subLevel);
 
   return el.mul(el.add(synth, sub), eg);
 }
 
 
+export const oscillator = (freqInHz, position, tone, numVoices, detuneAmt, channel) => {
 
-export const oscillator = (freqInHz, postion, numVoices, detuneCents) => {
-    
-    numVoices = numVoices < 7 ? numVoices : 7;
+  numVoices = numVoices < 7 ? numVoices : 7;
+  let unisonVoices = [];
 
-    // maybe clean this up in a loop with some modulo and add stereo
-    const detuneAmounts = [
-      0,
-      el.mul(detuneCents, -1),
-      el.mul(detuneCents, 1),
-      el.mul(detuneCents, 1.5),
-      el.mul(detuneCents, -1.5),
-      el.mul(detuneCents, 0.75),
-      el.mul(detuneCents, -0.75)
-    ];
+  for (let voice = 0; voice < 7; voice++) {
+    let detuneMultiplier;
+    let panGain;
 
-    let unisonVoices = [];
+    if (voice === 0) {
+      detuneMultiplier = el.const({ value: 1 }); 
+      panGain = el.const({ value: 1 });
+      
+    } else {
+      let channelPair = Math.ceil(voice / 2); 
+      let detuneDirec = voice % 2 == 0 ? -1 : 1; 
+      detuneMultiplier = el.const({ value: detuneDirec / channelPair });
 
-    for (let voice = 0; voice < 7; voice++)
-    {
-      let cents = detuneAmounts[voice];
-      let multiplier = el.pow(2, el.div(cents, 1200));
-      let detunedFreq = el.mul(freqInHz, multiplier);
-
-      let vc = wavetable(postion, detunedFreq);
-      unisonVoices.push(vc);
+      let panAngle = (0.5 / numVoices) * Math.PI * voice;
+      panGain = el.const({ value: Math.cos(panAngle) });
+      panGain = !channel ? panGain : el.sub(1.0, panGain);
     }
 
-    let sum = unisonVoices.reduce((acum, v) => el.add(acum, v));
-    return el.mul(sum, 1 / numVoices);
+    let cents = el.mul(detuneAmt, detuneMultiplier);
+    let multiplier = el.pow(2, el.div(cents, 1200));
+    let detunedFreq = el.mul(freqInHz, multiplier);
 
+    let vc = wavetable(position, detunedFreq, tone);
+    unisonVoices.push(el.mul(vc, panGain));
+  }
+
+  let sum = unisonVoices.reduce((acum, v) => el.add(acum, v));
+  return el.mul(sum, 1 / numVoices);
 }
 
-export const wavetable = (tablePosition, freqInHz) => {
+
+export const wavetable = (tablePosition, freqInHz, tone) => {
     let pos = el.mul(tablePosition, 7);    
     let posFloor = el.floor(pos);
     let lerp = el.sub(pos, posFloor);
-
     let normIncrement = 1/64;
+
+    let fmDepth = el.mul(tone, 4); 
+    let fm = el.mul(el.cycle(el.div(freqInHz, 2)), fmDepth); 
+
     let phase = el.phasor(freqInHz);
+    phase = el.add(phase, fm); 
     phase = el.div(phase, 8); 
+
     let xPhaseA = el.add(phase, el.mul(posFloor, normIncrement)); 
     let xPhaseB = el.add(phase, el.mul(el.add(posFloor, 1), normIncrement)); 
   

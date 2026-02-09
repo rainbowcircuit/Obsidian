@@ -6,7 +6,7 @@ import { outline } from 'three/examples/jsm/tsl/display/OutlineNode.js';
 // renderer
 const renderer = new THREE.WebGLRenderer( {antialias: true });
 renderer.setSize(1200, 800);
-renderer.setPixelRatio(window.devicePixelRatio); // Better quality on high-DPI displays
+renderer.setPixelRatio(window.devicePixelRatio); 
 
 // scene
 const scene = new THREE.Scene();
@@ -70,12 +70,9 @@ function animate() {
   shapeMesh.mesh.rotation.y = time;
   shapeMesh.spikeMod(egAmount, time2);
 
-
-
   // orb
   orbitMesh.mesh.position.x = Math.cos(time) * 2;
   orbitMesh.mesh.position.z = Math.sin(time) * 2;
-
 
   renderer.render(scene, camera);
 }

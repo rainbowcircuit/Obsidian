@@ -40,8 +40,9 @@ document.body.addEventListener('click', async () => {
         Synth.synthState.freq = el.sm(el.const({ key: 'freq', value: freqValue }));
         Synth.synthState.gate = el.const({ key: 'gate', value: 1 });
 
-        let graph = Synth.processSynth(Synth.synthState);
-        let stats = core.render(graph, graph);
+        let graphL = Synth.processSynth(Synth.synthState, 0);
+        let graphR = Synth.processSynth(Synth.synthState, 1);
+        let stats = core.render(graphL, graphR);
       }
     });
    
@@ -50,8 +51,9 @@ document.body.addEventListener('click', async () => {
       if (e.repeat) { return; }
       Synth.synthState.gate = el.const({ key: 'gate', value: 0 });
 
-      let graph = Synth.processSynth(Synth.synthState);
-      let stats = core.render(graph, graph);
+      let graphL = Synth.processSynth(Synth.synthState, 0);
+      let graphR = Synth.processSynth(Synth.synthState, 1);
+      let stats = core.render(graphL, graphR);
     });
 });
 

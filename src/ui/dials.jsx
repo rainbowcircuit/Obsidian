@@ -52,6 +52,7 @@ export function Dial({dialName, dialSize, stateKey, valueRange, valueStart, suff
             if (isDragging) {
                 // set graphic value
                 let sensitivity = 0.5;
+                
                 const rect = canvasRef.current.getBoundingClientRect();
                 const relativeY = e.clientY - rect.top; // Y position within the canvas
 
@@ -63,8 +64,9 @@ export function Dial({dialName, dialSize, stateKey, valueRange, valueStart, suff
                 Synth.synthState[stateKey] = el.sm(el.const({ key: stateKey, value: dialValueToSet }));
 
                 // rerender audio
-                let graph = Synth.processSynth(Synth.synthState);
-                core.render(graph, graph);
+                let graphL = Synth.processSynth(Synth.synthState, 0);
+                let graphR = Synth.processSynth(Synth.synthState, 1);
+                let stats = core.render(graphL, graphR);
             }
         }
 
@@ -94,4 +96,46 @@ export function Dial({dialName, dialSize, stateKey, valueRange, valueStart, suff
             <p> {Math.round(dialValue * valueRange + valueStart) + suffix}</p>
         </div>
     )
+}
+
+export function Toggle({ size, isVisible, setIsVisible })
+{
+    const canvasRef = useRef(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current; // 
+        if (canvas) {
+            const ctx = canvas.getContext("2d");
+            const ratio = window.devicePixelRatio || 1;
+            canvas.width = size * ratio;
+            canvas.height = size * ratio;
+
+            canvas.style.width = `${size}px`;
+            canvas.style.height = `${size}px`;
+            ctx.scale(ratio, ratio);
+            ctx.clearRect(0, 0, size, size);
+
+            ctx.beginPath();
+            ctx.moveTo(size * 0.1, size * 0.1);
+            ctx.lineTo(size * 0.9, size * 0.9);
+            ctx.moveTo(size * 0.9, size * 0.1);
+            ctx.lineTo(size * 0.1, size * 0.9);
+
+            ctx.strokeStyle = isVisible ? "#A67BB9" : "#444444";
+            ctx.lineWidth = 4;
+            ctx.lineCap = "round";
+            ctx.stroke();
+        }
+    }, [isVisible, size]);
+
+    function handleClick()
+    {
+        setIsVisible(!isVisible)
+    }
+
+    return (
+        <div id="toggle">
+            <canvas ref={canvasRef} width={size} height={size} onClick={handleClick} ></canvas>
+        </div>
+    ); 
 }
