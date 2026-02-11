@@ -3,6 +3,24 @@ import ReactDOM from 'react-dom/client';
 import { Dial, Toggle } from './dials.jsx'
 
 
+function WavetableSelector()
+{
+    return (
+        <div>
+            <select>
+                <option value="0">Table 0</option>
+                <option value="1">Table 1</option>
+                <option value="2">Table 2</option>
+                <option value="3">Table 3</option>
+                <option value="4">Table 4</option>
+                <option value="5">Table 5</option>
+                <option value="6">Table 6</option>
+                <option value="7">Table 7</option>
+            </select>
+        </div>
+    );
+}
+
 
 function VoiceControls()
 {
@@ -23,6 +41,9 @@ function VoiceControls()
                     transition: 'all 0.3s ease-in-out',
                     backgroundColor: isVisible ? '#222222' : 'transparent'
                 }}>
+
+                <WavetableSelector />
+                <WavetableSelector />
 
                 <div className='row1'>
                     <Dial dialName="Tone" stateKey={'tone'} dialSize={100} valueRange={100} valueStart={0} suffix={"%"} />

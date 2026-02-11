@@ -12,7 +12,6 @@ async function main() {
   initialized = true;
   console.log('Starting audio...');
 
-
   let node = await core.initialize(ctx, {
     numberOfInputs: 0,
     numberOfOutputs: 1,
@@ -20,9 +19,8 @@ async function main() {
   });
  
   node.connect(ctx.destination);
-  Synth.modifyWavetable(2, 0);
+  Synth.modifyWavetable(3, 0);
   Synth.modifyWavetable(6, 1);
-
 };
 
 

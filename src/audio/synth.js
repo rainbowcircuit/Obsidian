@@ -71,8 +71,10 @@ export const modifyWavetable = async (readIndex, wavetableIndex) => {
     [`/wavetable${wavetableIndex}`]: [wavetables]
   });
 
-  table.tableGraphics.setTables(wavetables);
-  table.tableGraphics.createGeometry();
+  table.tableGraphics.setTables(wavetables, wavetableIndex == 0);
+//  table.tableGraphics.createGeometry(wavetableIndex == 0);
+  table.tableGraphics.initializeSelectedWaveform();
+  table.tableGraphics.initializeTableWaveform();
 }
 
 function getWindow(sampleIndex)
@@ -92,15 +94,15 @@ export const processSynth = (state, channel) => {
                   el.mul(state.ampRls, 8), 
                   state.gate);
 
-  let eg2 = el.adsr(0.2,
-    0.2,
-    0.2,
-    0.1,
-    state.gate);
-
   eg = el.snapshot({ name: 'ampEG' }, el.train(30), eg); 
 
-  let synth = oscillator(state.freq, state.positionX, state.positionY, state.ratioX, state.ratioY, state.tone, 3, 10, channel == 0);
+  let synth = oscillator(state.freq, 
+                        state.positionX, 
+                        state.positionY, 
+                        state.ratioX, 
+                        state.ratioY, 
+                        state.tone, 3, 10, channel == 0);
+
   synth = el.mul(synth, 0.85);
 
   let sub = el.cycle(el.mul(state.subOctave, state.freq));
@@ -147,33 +149,6 @@ export const oscillator = (freqInHz, positionX, positionY, ratioX, ratioY, tone,
   return el.mul(sum, 1 / numVoices);
 }
 
-/*
-export const wavetable = (tablePosition, freqInHz, tone) => {
-    let pos = el.mul(tablePosition, 7);    
-    let posFloor = el.floor(pos);
-    let lerp = el.sub(pos, posFloor);
-    let normIncrement = 1/64;
-
-    let fmDepth = el.mul(tone, 4); 
-    let fm = el.mul(el.cycle(el.div(freqInHz, 2)), fmDepth); 
-
-    let phase = el.phasor(freqInHz);
-    phase = el.add(phase, fm); 
-    phase = el.div(phase, 8); 
-
-    let xPhaseA = el.add(phase, el.mul(posFloor, normIncrement)); 
-    let xPhaseB = el.add(phase, el.mul(el.add(posFloor, 1), normIncrement)); 
-  
-    let waveA = el.table({ path: '/wavetable' }, xPhaseA);
-    let waveB = el.table({ path: '/wavetable' }, xPhaseB);
-    let wave = el.add(
-      el.mul(waveA, el.sub(1, lerp)),
-      el.mul(waveB, lerp)
-    );
-
-  return wave;
-}
-*/
 export const wavetable = (tablePositionX, tablePositionY, ratioX, ratioY, freqInHz, tone) => {
   let posX = el.mul(tablePositionX, 7);
   let posXFloor = el.floor(posX);
