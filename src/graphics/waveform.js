@@ -14,7 +14,7 @@ export class ObsidianMesh {
 
     constructor() {
         this.sharedVertexIndexes = [];
-        this.geometry = new THREE.DodecahedronGeometry(1, 1);  
+        this.geometry = new THREE.DodecahedronGeometry(1.25, 1);  
         
         let position = this.geometry.attributes.position;
         let processed = new Set();
@@ -90,7 +90,7 @@ export class ObsidianMesh {
     spikeMod(outwardAmt, osc)
     {
         // clean this up also:
-        outwardAmt *= 0.35
+        outwardAmt *= 1.25
         osc = osc % 1;
         osc = Math.abs(Math.sin(osc * Math.PI * 2)) * 0.35;
         osc *= osc;

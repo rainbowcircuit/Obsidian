@@ -104,7 +104,7 @@ export const processSynth = (state, channel) => {
   synth = el.mul(synth, 0.85);
 
   let sub = el.cycle(el.mul(state.subOctave, state.freq));
-  let subTone = el.mul(el.add(state.subTone, 1), 3);
+  let subTone = el.mul(el.add(state.subTone, 1), 10);
   sub = el.tanh(el.mul(sub, subTone));
   sub = el.mul(sub, state.subLevel);
 

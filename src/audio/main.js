@@ -20,8 +20,8 @@ async function main() {
   });
  
   node.connect(ctx.destination);
-  Synth.modifyWavetable(4, 0);
-  Synth.modifyWavetable(5, 1);
+  Synth.modifyWavetable(2, 0);
+  Synth.modifyWavetable(6, 1);
 
 };
 
