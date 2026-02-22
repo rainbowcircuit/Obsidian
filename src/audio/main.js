@@ -1,6 +1,9 @@
 import {el} from '@elemaudio/core';
 import WebRenderer from '@elemaudio/web-renderer';
+import * as Params from './parameters.js'
 import * as Synth from './synth.js'; 
+import * as Modulation from './modulation.js'
+
 
 const ctx = new AudioContext();
 export const core = new WebRenderer();
@@ -19,67 +22,57 @@ async function main() {
   });
  
   node.connect(ctx.destination);
-  Synth.modifyWavetable(3, 0);
-  Synth.modifyWavetable(6, 1);
+  Synth.modifyWavetable(7, 0);
+
+  Modulation.updateModTable();
 };
 
 
-// event handling
+
+
+
+
+
 document.body.addEventListener('click', async () => {
-    await main();
-  
-    // key down
-    document.body.addEventListener("keydown", async (e) => {
-      if (e.repeat) { return; }
-      let key = QWERTYKeyboard[e.key];
+  await main();
 
-      if (key != undefined){
+  // key down
+  document.body.addEventListener("keydown", (e) => {
+    if (e.repeat) return;
+    
+    const key = QWERTYKeyboard[e.key];
+    if (key !== undefined) {
+      const freqValue = 440 * Math.exp(0.057762265 * ((key + 24) - 69));
+      Params.setParam('mainOscillator.freq', freqValue);
+      Params.setParam('gate', 1);
 
-        let freqValue = (440 * Math.exp(0.057762265 * ((key + 12) - 69.)));
-        Synth.synthState.freq = el.sm(el.const({ key: 'freq', value: freqValue }));
-        Synth.synthState.gate = el.const({ key: 'gate', value: 1 });
+      const state = Params.buildAudioState();
+      core.render(Synth.processSynth(state, 0), Synth.processSynth(state, 1))
+    }
+  });
 
-        let graphL = Synth.processSynth(Synth.synthState, 0);
-        let graphR = Synth.processSynth(Synth.synthState, 1);
-        let stats = core.render(graphL, graphR);
-      }
-    });
-   
-    // key up
-    document.body.addEventListener("keyup", async (e) => {
-      if (e.repeat) { return; }
-      Synth.synthState.gate = el.const({ key: 'gate', value: 0 });
+  // key up
+  document.body.addEventListener("keyup", (e) => {
+    if (e.repeat) return;
+    Params.setParam('gate', 0);
 
-      let graphL = Synth.processSynth(Synth.synthState, 0);
-      let graphR = Synth.processSynth(Synth.synthState, 1);
-      let stats = core.render(graphL, graphR);
-    });
+    const state = Params.buildAudioState();
+    core.render(Synth.processSynth(state, 0), Synth.processSynth(state, 1))
+  });
 });
 
 const QWERTYKeyboard = {
-    "a" : 24, 
-    "w" : 25,
-    "s" : 26, 
-    "e" : 27,
-    "d" : 28, 
-    "f" : 29,
-    "t" : 30,
-    "g" : 31,
-    "y" : 32,
-    "h" : 33,
-    "u" : 34,
-    "j" : 35,
-    "k" : 36 };
-
-
-  
-
-
-
-
-
-core.on('snapshot', function (e) {
-  if (e.source === "mySnap") {
-    console.log(e.data); // { source: "ss", data: 0.1394131 }
-  }
-});
+  "a": 24,
+  "w": 25,
+  "s": 26,
+  "e": 27,
+  "d": 28,
+  "f": 29,
+  "t": 30,
+  "g": 31,
+  "y": 32,
+  "h": 33,
+  "u": 34,
+  "j": 35,
+  "k": 36
+};

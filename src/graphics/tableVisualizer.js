@@ -57,6 +57,7 @@ class WavetableDisplay {
 
 
   initializeTableWaveform() {
+    /*
     this.selectionMaterial = new LineMaterial({
       color: 0xA67BB9,
       linewidth: 1,
@@ -77,6 +78,7 @@ class WavetableDisplay {
       this.tableLines.push(tableLine);
       scene.add(tableLine);
     }
+      */
   }
 
 
@@ -165,7 +167,7 @@ class WavetableDisplay {
 
     return points;
   }
-}``
+}
 
 
 
@@ -187,7 +189,7 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-renderer.setAnimationLoop(animate); 
- document.body.appendChild(renderer.domElement).id = "tableDisplay";
+// renderer.setAnimationLoop(animate); 
+// document.body.appendChild(renderer.domElement).id = "tableDisplay";
 
 

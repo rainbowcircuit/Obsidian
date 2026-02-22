@@ -3,11 +3,13 @@ import ReactDOM from 'react-dom/client';
 
 import { el } from '@elemaudio/core';
 import { core } from '../audio/main.js'
+import * as Param from '../audio/parameters.js'; 
+import * as Modulation from '../audio/modulation.js'; 
 import * as Synth from '../audio/synth.js'; 
 
 
 
-export function Dial({dialName, dialSize, stateKey, valueRange, valueStart, suffix})
+export function Dial({dialName, statePath, dialSize, valueRange, valueStart, suffix})
 {
     const [dialValue, setDialValue] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
@@ -43,12 +45,11 @@ export function Dial({dialName, dialSize, stateKey, valueRange, valueStart, suff
             ctx.arc(dialSize / 2, dialSize/2, dialSize * 0.45, startAngle, endAngle, false)
             ctx.strokeStyle = "#A67BB9"
             ctx.stroke();
-
         }
     }, [dialValue]);
 
     useEffect(() => {
-        async function handleMove(e) {
+         function handleMove(e) {
             if (isDragging) {
                 // set graphic value
                 let sensitivity = 0.5;
@@ -61,11 +62,13 @@ export function Dial({dialName, dialSize, stateKey, valueRange, valueStart, suff
                 setDialValue(dialValueToSet);
 
                 // set dsp value
-                Synth.synthState[stateKey] = el.sm(el.const({ key: stateKey, value: dialValueToSet }));
+                Param.setParam(statePath, dialValueToSet);
+                Modulation.updateModTable();
 
                 // rerender audio
-                let graphL = Synth.processSynth(Synth.synthState, 0);
-                let graphR = Synth.processSynth(Synth.synthState, 1);
+                const state = Param.buildAudioState();
+                let graphL = Synth.processSynth(state, 0);
+                let graphR = Synth.processSynth(state, 1);
                 let stats = core.render(graphL, graphR);
             }
         }
